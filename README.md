@@ -1,7 +1,5 @@
 # Greenhouse ML Monitoring and Drift Detection System
 
-![Main Workflow Status](https://github.com/SirbuVlad24/ML-Monitoring-Drift-Detection/actions/workflows/ci.yml/badge.svg?branch=main)
-
 ## Project Overview
 This repository implements a real-time Machine Learning monitoring system designed for greenhouse environmental data. The project provides an end-to-end MLOps workflow, including data ingestion, automated model training, real-time inference via REST API, and data drift detection using Evidently AI.
 
