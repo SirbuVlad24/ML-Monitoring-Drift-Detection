@@ -6,8 +6,10 @@ from __future__ import annotations
 import time
 from typing import List, Optional
 
-import pandas as pd
+import os
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from app.config import N_FEATURES, ROOT_DIR, logger
@@ -21,6 +23,15 @@ app = FastAPI(
     version="1.0.0",
     description="Real-time anomaly detection with automated data-drift monitoring.",
 )
+
+# Ensure static dir exists and mount it
+os.makedirs(str(ROOT_DIR / "static"), exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(ROOT_DIR / "static")), name="static")
+
+@app.get("/", tags=["ui"])
+def serve_ui():
+    """Serves the visually stunning HTML frontend interface."""
+    return FileResponse(str(ROOT_DIR / "static/index.html"))
 
 _start_time = time.time()
 

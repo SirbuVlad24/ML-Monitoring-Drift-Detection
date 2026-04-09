@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Greenhouse MLOps Platform</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="/static/index.css">
+</head>
+<body>
+    
+    <!-- Background Animated Shapes -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <main class="container">
+        <header class="header">
+            <div>
+                <h1>Greenhouse <span>MLOps</span></h1>
+                <p>Platformă inteligentă de monitorizare, predicție și Data Drift</p>
+            </div>
+            <div class="badge">
+                <span class="dot pulse"></span>
+                Sistem Activ
+            </div>
+        </header>
+
+        <div class="grid">
+            <!-- Panel 1: Inferență ML (Inputs) -->
+            <section class="glass-panel">
+                <h2>Sensori Mediu & Inferență</h2>
+                <p class="subtitle">Introdu datele captate de senzori pentru a genera predicțiile IA:</p>
+
+                <form id="inferenceForm">
+                    <div class="input-group">
+                        <label for="temp">Temperatură Medie (°C)</label>
+                        <input type="number" id="temp" step="0.1" value="24.5" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="humidity">Umiditate (%)</label>
+                        <input type="number" id="humidity" step="0.1" value="75.0" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="co2">Nivel CO2 (ppm)</label>
+                        <input type="number" id="co2" step="1" value="800" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="light">Intensitate Lumină (lux)</label>
+                        <input type="number" id="light" step="1" value="36000" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="ph">pH Sol</label>
+                        <input type="number" id="ph" step="0.1" value="6.5" required>
+                    </div>
+                    
+                    <div class="action-grid">
+                        <button type="button" class="btn btn-primary" onclick="predict('/predict', 'anomalyResult')">
+                            🕵️ Verifică Anomalie (IsoForest)
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="predict('/predict/yield', 'yieldResult')">
+                            🍅 Estimează Recoltă (Regresie)
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="predict('/predict/cluster', 'clusterResult')">
+                            📊 Estimează Scenariu (K-Means)
+                        </button>
+                    </div>
+                </form>
+
+                <div class="results-container">
+                    <div id="anomalyResult" class="result-card">Așteaptă acțiune...</div>
+                    <div id="yieldResult" class="result-card">Așteaptă acțiune...</div>
+                    <div id="clusterResult" class="result-card">Așteaptă acțiune...</div>
+                </div>
+            </section>
+
+            <!-- Panel 2: MLOps / Drift -->
+            <section class="glass-panel">
+                <h2>DevOps & Monitorizare Model</h2>
+                <p class="subtitle">Detectează schimbările climei (Data Drift) folosind Evidently AI și re-antrenează serverul live.</p>
+
+                <div class="ops-card">
+                    <div class="ops-icon">👁️</div>
+                    <div class="ops-content">
+                        <h3>Detecție Data Drift</h3>
+                        <p>Compară datele de antrenament cu cele raportate recent în producție.</p>
+                        <button type="button" class="btn btn-warning" onclick="detectDrift()">Scanează Distribuțiile</button>
+                    </div>
+                </div>
+
+                <div class="ops-card">
+                    <div class="ops-icon">⚙️</div>
+                    <div class="ops-content">
+                        <h3>Retrain (Re-Învățare)</h3>
+                        <p>În caz de modificări climatice majore, dă trigger la antrenarea de la zero.</p>
+                        <button type="button" class="btn btn-danger" onclick="retrainModel()">Rulează CI/CD Retrain</button>
+                    </div>
+                </div>
+
+                <div class="terminal">
+                    <div class="terminal-header">
+                        <span class="btn-mac red"></span>
+                        <span class="btn-mac yellow"></span>
+                        <span class="btn-mac green"></span>
+                        <span class="terminal-title">mlops-console ~ bash</span>
+                    </div>
+                    <div class="terminal-body" id="consoleOutput">
+                        <p>> Server ready pe portul 8000</p>
+                        <p>> Modelele IzolationForest, KMeans și LinReg încărcate în memorie...</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
