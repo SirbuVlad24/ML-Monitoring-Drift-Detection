@@ -7,14 +7,16 @@ import time
 from typing import List, Optional
 
 import os
+import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from app.config import N_FEATURES, ROOT_DIR, logger
+import json
 from app.drift import detect_drift, retrain_if_needed
-from app.model import load_model, load_kmeans, load_linreg
+from app.model import load_model, load_kmeans, load_linreg, load_classifier
 from app.predict import predict
 
 # ── App instance ─────────────────────────────
@@ -115,6 +117,32 @@ def predict_yield_endpoint(req: PredictRequest) -> dict:
     except Exception as exc:
         logger.exception("Yield Prediction failed")
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.post("/predict/crop", tags=["inference"])
+def predict_crop_endpoint(req: PredictRequest) -> dict:
+    """Uses Random Forest to predict what crop type is optimal/planted."""
+    try:
+        model = load_classifier()
+        sample = [req.features]
+        prediction = model.predict(sample)[0]
+        return {
+            "predicted_crop_type": str(prediction),
+            "message": "Predictie clasificata folosind Random Forest."
+        }
+    except Exception as exc:
+        logger.exception("Classification Prediction failed")
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/metrics", tags=["ops"])
+def get_metrics_endpoint() -> dict:
+    """Returns the F1, Precision, Accuracy scores of the trained models."""
+    metrics_path = ROOT_DIR / "models/metrics.json"
+    if not metrics_path.exists():
+        raise HTTPException(status_code=404, detail="Metrics not found. Run training script.")
+    with open(metrics_path, "r") as f:
+        return json.load(f)
 
 
 @app.post("/drift/detect", tags=["monitoring"])

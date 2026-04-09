@@ -60,12 +60,16 @@ def load_model(path: Optional[Path] = None) -> IsolationForest:
 
 _cached_kmeans = None
 _cached_linreg = None
+_cached_classifier = None
 
 def get_kmeans_path() -> Path:
     return ROOT_DIR / "models/kmeans.joblib"
 
 def get_linreg_path() -> Path:
     return ROOT_DIR / "models/linreg.joblib"
+
+def get_classifier_path() -> Path:
+    return ROOT_DIR / "models/classifier.joblib"
 
 def load_kmeans():
     global _cached_kmeans
@@ -90,6 +94,18 @@ def load_linreg():
     
     _cached_linreg = joblib.load(path)
     return _cached_linreg
+
+def load_classifier():
+    global _cached_classifier
+    if _cached_classifier is not None:
+        return _cached_classifier
+    
+    path = get_classifier_path()
+    if not path.exists():
+        raise FileNotFoundError("Nu exista modelul Classifier. Ruleaza python -m scripts.train_more_models")
+    
+    _cached_classifier = joblib.load(path)
+    return _cached_classifier
 
 def clear_cache() -> None:
     """Invalidate the in-memory model cache (called after retraining)."""

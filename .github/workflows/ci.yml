@@ -23,15 +23,20 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest httpx
-        
-    - name: Run training to generate model
+
+    - name: Verify dataset exists
       run: |
-        python scripts/train.py
+        ls -la data/
+        head -2 data/greenhouse_crop_yields.csv
         
-    - name: Run simulation to generate drift data
-      run: |
-        python scripts/simulate_drift.py
+    - name: Train base model (Isolation Forest)
+      run: python scripts/train.py
+        
+    - name: Train additional models (KMeans, LinReg, RandomForest)
+      run: python scripts/train_more_models.py
+
+    - name: Generate drift simulation data
+      run: python scripts/simulate_drift.py
         
     - name: Test API
-      run: |
-        pytest tests/
+      run: pytest tests/

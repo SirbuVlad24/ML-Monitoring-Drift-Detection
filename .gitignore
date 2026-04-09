@@ -9,9 +9,12 @@ __pycache__/
 *$py.class
 *.so
 
-# Data and Models 
-# (You usually don't want to push massive data files or binary models to git)
-data/
+# Generated data (not the raw dataset)
+data/train.csv
+data/production.csv
+data/drift_report.html
+
+# Trained model binaries
 models/
 
 # OS specific

@@ -1,121 +1,151 @@
-// Helper function to append to terminal
-function logToTerminal(message, type="info") {
-    const consoleBody = document.getElementById("consoleOutput");
+/* ── Console helper ── */
+function logToTerminal(message, type = "info") {
+    const el = document.getElementById("consoleOutput");
     const p = document.createElement("p");
-    
-    // Add color based on log type
-    if (type === "error") p.style.color = "#ef4444";
+
+    if (type === "error")   p.style.color = "#ef4444";
     if (type === "warning") p.style.color = "#f59e0b";
-    
-    const time = new Date().toLocaleTimeString('ro-RO');
-    p.textContent = `[${time}] > ${message}`;
-    consoleBody.appendChild(p);
-    consoleBody.scrollTop = consoleBody.scrollHeight;
+
+    const ts = new Date().toLocaleTimeString("ro-RO");
+    p.textContent = `[${ts}] > ${message}`;
+    el.appendChild(p);
+    el.scrollTop = el.scrollHeight;
 }
 
-// Get feature inputs
+/* ── Read sensor inputs ── */
 function getFeatures() {
-    const temp = parseFloat(document.getElementById("temp").value);
-    const humidity = parseFloat(document.getElementById("humidity").value);
-    const co2 = parseFloat(document.getElementById("co2").value);
-    const light = parseFloat(document.getElementById("light").value);
-    const ph = parseFloat(document.getElementById("ph").value);
-    
-    return [temp, humidity, co2, light, ph];
+    return [
+        parseFloat(document.getElementById("temp").value),
+        parseFloat(document.getElementById("humidity").value),
+        parseFloat(document.getElementById("co2").value),
+        parseFloat(document.getElementById("light").value),
+        parseFloat(document.getElementById("ph").value),
+    ];
 }
 
-// Unified Prediction Function
-async function predict(endpoint, resultElementId) {
-    const resultCard = document.getElementById(resultElementId);
-    resultCard.innerHTML = `<span class="pulse dot" style="margin-right: 8px;"></span> Analizare date în curs...`;
-    
+/* ── Unified prediction call ── */
+async function predict(endpoint, resultId) {
+    const card = document.getElementById(resultId);
+    card.textContent = "⏳ Se analizează…";
+
     try {
-        const features = getFeatures();
-        
         const res = await fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ features: features })
+            body: JSON.stringify({ features: getFeatures() }),
         });
-        
         const data = await res.json();
-        
-        if (!res.ok) throw new Error(data.detail || "Eroare la server");
-        
-        // Format the output based on endpoint
+        if (!res.ok) throw new Error(data.detail || "Eroare server");
+
         if (endpoint === "/predict") {
-            const isAnomaly = data.is_anomaly;
-            const emoji = isAnomaly ? "🚨" : "✅";
-            const status = isAnomaly ? "ANOMALIE DETECTATĂ" : "Parametri normali";
-            const color = isAnomaly ? "var(--danger)" : "var(--primary)";
-            resultCard.innerHTML = `<b style="color: ${color}">${emoji} ${status}</b> (Scor: ${data.anomaly_score})`;
-            logToTerminal(`Inference IsoForest: Scor ${data.anomaly_score} -> ${status}`, isAnomaly ? "error" : "info");
-        } 
+            const ok   = !data.is_anomaly;
+            const icon = ok ? "✅" : "🚨";
+            const txt  = ok ? "Normal" : "ANOMALIE";
+            card.innerHTML = `<b style="color:${ok ? "var(--green)" : "var(--red)"}">${icon} ${txt}</b> &nbsp;·&nbsp; scor: ${data.anomaly_score}`;
+            logToTerminal(`IsoForest → scor ${data.anomaly_score} → ${txt}`, ok ? "info" : "error");
+        }
         else if (endpoint === "/predict/yield") {
-            const yieldKg = data.predicted_yield_kg_per_m2;
-            resultCard.innerHTML = `🍅 <b>Estimare Randament:</b> ${yieldKg} kg / m²`;
-            logToTerminal(`Inference LinReg: Estimat ${yieldKg} kg/m²`);
+            card.innerHTML = `🍅 <b>Randament estimat:</b> ${data.predicted_yield_kg_per_m2} kg / m²`;
+            logToTerminal(`LinReg → ${data.predicted_yield_kg_per_m2} kg/m²`);
         }
         else if (endpoint === "/predict/cluster") {
-            const cluster = data.cluster_id;
-            resultCard.innerHTML = `📊 <b>Profil Mediu:</b> Scenariul / Clusterul ${cluster}`;
-            logToTerminal(`Inference KMeans: Asignare Cluster ${cluster}`);
+            card.innerHTML = `📊 <b>Cluster:</b> Scenariul ${data.cluster_id}`;
+            logToTerminal(`KMeans → Cluster ${data.cluster_id}`);
+        }
+        else if (endpoint === "/predict/crop") {
+            card.innerHTML = `🌱 <b>Plantă prezisă:</b> ${data.predicted_crop_type}`;
+            logToTerminal(`RandomForest → ${data.predicted_crop_type}`);
         }
     } catch (e) {
-        resultCard.innerHTML = `❌ Eroare: ${e.message}`;
+        card.innerHTML = `❌ ${e.message}`;
         logToTerminal(`Eroare ${endpoint}: ${e.message}`, "error");
     }
 }
 
-// MLOps Drift Detection
+/* ── Drift detection ── */
 async function detectDrift() {
-    logToTerminal("Se rulează analiza de Drift (Evidently AI)...", "warning");
-    
+    logToTerminal("Evidently AI – analiză drift în curs…", "warning");
+
     try {
         const res = await fetch("/drift/detect", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({}) // Default paths are fine
+            body: JSON.stringify({}),
         });
-        
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail);
-        
-        const drifted = data.drifted;
-        const percentage = (data.drift_share * 100).toFixed(1);
-        
-        if (drifted) {
-             logToTerminal(`🚨 DATA DRIFT CONFIRMAT! ${percentage}% din features sunt afectate.`, "error");
+
+        const pct = (data.drift_share * 100).toFixed(1);
+        if (data.drifted) {
+            logToTerminal(`🚨 DATA DRIFT CONFIRMAT! ${pct}% din features afectate.`, "error");
         } else {
-             logToTerminal(`✅ Datele sunt stabile. Doar ${percentage}% deviație vizibilă.`);
+            logToTerminal(`✅ Stabil – doar ${pct}% deviație.`);
         }
-        
-    } catch(e) {
-         logToTerminal(`Eroare Drift: ${e.message}`, "error");
+    } catch (e) {
+        logToTerminal(`Eroare drift: ${e.message}`, "error");
     }
 }
 
-// MLOps Retrain
+/* ── Retrain ── */
 async function retrainModel() {
-    logToTerminal("Se rulează CI/CD pipeline de re-antrenare. Așteaptă...", "warning");
-    
+    logToTerminal("Pipeline CI/CD retrain pornit…", "warning");
+
     try {
         const res = await fetch("/drift/retrain", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({})
+            body: JSON.stringify({}),
         });
-        
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail);
-        
+
         if (data.retrained) {
-            logToTerminal(`🔧 Modelele au fost re-antrenate cu succes pe noile date!`, "info");
+            logToTerminal("🔧 Modelele au fost re-antrenate cu succes!");
         } else {
-            logToTerminal(`ℹ️ Nu este nevoie de reantrenare (Drift sub threshold).`, "info");
+            logToTerminal("ℹ️ Drift sub threshold – re-antrenare neactivată.");
         }
-        
-    } catch(e) {
-         logToTerminal(`Eroare Retrain: ${e.message}`, "error");
+    } catch (e) {
+        logToTerminal(`Eroare retrain: ${e.message}`, "error");
     }
 }
+
+/* ── Load metrics on page open ── */
+async function loadMetrics() {
+    try {
+        const res = await fetch("/metrics");
+        if (!res.ok) return;
+
+        const data  = await res.json();
+        const panel = document.getElementById("metricsPanel");
+        const box   = document.getElementById("metricsContent");
+
+        const rf = data.classification;
+        const lr = data.regression;
+
+        box.innerHTML = `
+            <div class="metric-card" style="background:${cssVar("purple-dim")}; border-color:rgba(139,92,246,0.25);">
+                <h3 style="color:#a78bfa;">🌱 Random Forest (Clasificare Plante)</h3>
+                <div class="stat">Acuratețe: <b>${rf.accuracy}%</b></div>
+                <div class="stat">Precizie:  <b>${rf.precision}%</b></div>
+                <div class="stat">Recall:    <b>${rf.recall}%</b></div>
+                <div class="highlight" style="color:#c4b5fd;">🏆 F1 Score: ${rf.f1_score}%</div>
+            </div>
+            <div class="metric-card" style="background:${cssVar("blue-dim")}; border-color:rgba(59,130,246,0.25);">
+                <h3 style="color:#60a5fa;">📈 Regresie Liniară (Estimare Recoltă)</h3>
+                <div class="stat">RMSE: <b>${lr.rmse} kg/m²</b></div>
+                <div class="highlight" style="color:#93c5fd;">R² Score: ${lr.r2}</div>
+            </div>
+        `;
+
+        panel.style.display = "block";
+        logToTerminal("Metricile modelelor încărcate via /metrics.");
+    } catch {
+        logToTerminal("Metrics indisponibile – antrenează modelele mai întâi.", "warning");
+    }
+}
+
+function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue("--" + name).trim();
+}
+
+window.addEventListener("DOMContentLoaded", loadMetrics);

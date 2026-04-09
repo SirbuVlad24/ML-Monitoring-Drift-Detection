@@ -1,12 +1,18 @@
 """
-train_more_models.py - Train K-Means and Linear Regression models on the greenhouse dataset.
+train_more_models.py - Train K-Means, LinReg, and RandomForest (Classification)
 """
 import sys
+import json
 from pathlib import Path
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import (
+    mean_squared_error, r2_score,
+    accuracy_score, precision_score, recall_score, f1_score
+)
 import joblib
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -20,35 +26,70 @@ def main():
         logger.error(f"Missing dataset at {raw_path}")
         sys.exit(1)
 
-    # We need to make sure the target variable (yield) is also clean for Linear Regression
-    df = pd.read_csv(raw_path).dropna(subset=FEATURE_NAMES + ["yield_kg_per_m2"])
+    # 1. Prepare data
+    df = pd.read_csv(raw_path).dropna(subset=FEATURE_NAMES + ["yield_kg_per_m2", "crop_type"])
     X = df[FEATURE_NAMES]
-    y = df["yield_kg_per_m2"]
+    
+    # Target 1: Yield (Regression)
+    y_reg = df["yield_kg_per_m2"]
+    
+    # Target 2: Crop Type (Classification)
+    y_clf = df["crop_type"]
 
-    logger.info("=== 1. Training K-Means (Unsupervised Clustering) ===")
-    # K-Means will group similar greenhouse days into 3 clusters
+    metrics = {}
+
+    # === A. K-Means (Clustering) ===
+    logger.info("=== Training K-Means (Unsupervised) ===")
     kmeans = KMeans(n_clusters=3, random_state=42, n_init="auto")
     kmeans.fit(X)
-    logger.info("K-Means trained successfully! Cluster Inertia (loss): %.2f", kmeans.inertia_)
-    
-    logger.info("=== 2. Training Linear Regression (Predicting Crop Yield) ===")
-    # Linear Regression tries to predict the exact "yield_kg_per_m2" based on temp/humidity etc.
+    metrics["kmeans"] = {"inertia": round(kmeans.inertia_, 2)}
+
+    # === B. Linear Regression (Regression) ===
+    logger.info("=== Training Linear Regression ===")
+    X_train_r, X_test_r, y_train_r, y_test_r = train_test_split(X, y_reg, test_size=0.2, random_state=42)
     linreg = LinearRegression()
-    linreg.fit(X, y)
+    linreg.fit(X_train_r, y_train_r)
     
-    # Calculate performance metrics
-    preds = linreg.predict(X)
-    rmse = mean_squared_error(y, preds, squared=False)
-    r2 = r2_score(y, preds)
-    logger.info("Linear Regression trained! R² Score: %.2f (RMSE: %.2f kg/m² error margin)", r2, rmse)
+    preds_r = linreg.predict(X_test_r)
+    rmse = mean_squared_error(y_test_r, preds_r, squared=False)
+    r2 = r2_score(y_test_r, preds_r)
+    metrics["regression"] = {"rmse": round(rmse, 2), "r2": round(r2, 2)}
+
+    # === C. Random Forest (Classification) ===
+    logger.info("=== Training Classifier for F1, Accuracy, Precision ===")
+    X_train_c, X_test_c, y_train_c, y_test_c = train_test_split(X, y_clf, test_size=0.2, random_state=42)
     
-    # Save the models
+    classifier = RandomForestClassifier(n_estimators=100, random_state=42)
+    classifier.fit(X_train_c, y_train_c)
+    
+    preds_c = classifier.predict(X_test_c)
+    
+    # Calculate Classification Metrics
+    acc = accuracy_score(y_test_c, preds_c)
+    prec = precision_score(y_test_c, preds_c, average="macro", zero_division=0)
+    rec = recall_score(y_test_c, preds_c, average="macro", zero_division=0)
+    f1 = f1_score(y_test_c, preds_c, average="macro", zero_division=0)
+    
+    metrics["classification"] = {
+        "accuracy": round(acc * 100, 2),
+        "precision": round(prec * 100, 2),
+        "recall": round(rec * 100, 2),
+        "f1_score": round(f1 * 100, 2)
+    }
+
+    # Save all models & metrics
     models_dir = ROOT / "models"
     models_dir.mkdir(exist_ok=True)
     
     joblib.dump(kmeans, models_dir / "kmeans.joblib")
     joblib.dump(linreg, models_dir / "linreg.joblib")
-    logger.info("Am salvat modelele KMeans și LinearRegression în folderul models/")
+    joblib.dump(classifier, models_dir / "classifier.joblib")
+    
+    with open(models_dir / "metrics.json", "w") as f:
+        json.dump(metrics, f, indent=4)
+        
+    logger.info("All models and Metrics saved successfully in models/")
+    logger.info(f"Classification Metrics: {metrics['classification']}")
 
 if __name__ == "__main__":
     main()
