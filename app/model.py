@@ -109,6 +109,9 @@ def load_classifier():
 
 def clear_cache() -> None:
     """Invalidate the in-memory model cache (called after retraining)."""
-    global _cached_model
+    global _cached_model, _cached_kmeans, _cached_linreg, _cached_classifier
     _cached_model = None
-    logger.info("Model cache cleared")
+    _cached_kmeans = None
+    _cached_linreg = None
+    _cached_classifier = None
+    logger.info("All model caches cleared")

@@ -10,8 +10,8 @@ model:
 
 data:
   raw_dataset_path: "data/greenhouse_crop_yields.csv"
-  n_samples_train: 2000
-  n_samples_prod: 500
+  n_samples_train: 9000
+  n_samples_prod: 1400
   feature_names:
     - avg_temperature_C
     - humidity_percent

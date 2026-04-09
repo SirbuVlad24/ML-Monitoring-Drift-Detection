@@ -76,9 +76,11 @@ def detect_drift(
 def retrain_if_needed(
     reference: pd.DataFrame,
     current: pd.DataFrame,
+    reference_path: Optional[str] = None,
 ) -> dict:
     """
-    Run drift detection; if drift exceeds threshold, retrain on combined data.
+    Run drift detection; if drift exceeds threshold, retrain on combined data
+    AND update the reference file (train.csv) with the new data distribution.
     """
     is_drifted, share, _ = detect_drift(reference, current)
 
@@ -94,13 +96,21 @@ def retrain_if_needed(
     cols = _feature_columns()
     combined = pd.concat([reference[cols], current[cols]], ignore_index=True)
 
+    # 1. Update the ML model binary
     model = build_model()
     model.fit(combined)
     save_model(model)
     clear_cache()
 
+    # 2. Update the reference CSV so NEXT time drift detection is based on THIS state
+    # We replace the baseline with the current production data to "reset" the drift
+    if reference_path:
+        save_path = ROOT_DIR / reference_path
+        current[cols].to_csv(save_path, index=False)
+        logger.info("Reference data reset to current production state → %s", save_path)
+
     return {
         "retrained": True,
         "drift_share": round(share, 4),
-        "message": "Model retrained on combined reference + current data.",
+        "message": "Model retrained and reference baseline updated.",
     }

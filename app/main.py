@@ -178,4 +178,5 @@ def drift_retrain_endpoint(req: DriftRequest) -> dict:
 
     ref = pd.read_csv(ref_path)
     cur = pd.read_csv(cur_path)
-    return retrain_if_needed(ref, cur)
+    # Important: Tell retrain_if_needed to update train.csv directly!
+    return retrain_if_needed(ref, cur, reference_path=(req.reference_path or "data/train.csv"))
