@@ -1,0 +1,33 @@
+# ──────────────────────────────────────────────
+# ML Monitoring & Drift Detection – Configuration
+# ──────────────────────────────────────────────
+
+model:
+  path: "models/isolation_forest.joblib"
+  contamination: 0.05
+  n_estimators: 150
+  random_state: 42
+
+data:
+  raw_dataset_path: "data/greenhouse_crop_yields.csv"
+  n_samples_train: 2000
+  n_samples_prod: 500
+  feature_names:
+    - avg_temperature_C
+    - humidity_percent
+    - co2_ppm
+    - light_intensity_lux
+    - soil_pH
+  random_state: 42
+
+drift:
+  threshold: 0.5
+  report_path: "data/drift_report.html"
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"

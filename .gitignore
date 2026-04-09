@@ -1,0 +1,19 @@
+# Environments
+venv/
+env/
+.env
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Data and Models 
+# (You usually don't want to push massive data files or binary models to git)
+data/
+models/
+
+# OS specific
+.DS_Store
+Thumbs.db
