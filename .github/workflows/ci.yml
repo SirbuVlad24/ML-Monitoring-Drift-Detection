@@ -63,5 +63,5 @@ jobs:
         context: .
         push: true
         tags: |
-          ghcr.io/${{ github.repository_owner }}/ml-monitoring-drift-detection:latest
-          ghcr.io/${{ github.repository_owner }}/ml-monitoring-drift-detection:${{ github.sha }}
+          ghcr.io/sirbuvlad24/ml-monitoring-drift-detection:latest
+          ghcr.io/sirbuvlad24/ml-monitoring-drift-detection:${{ github.sha }}
