@@ -39,4 +39,6 @@ jobs:
       run: python scripts/simulate_drift.py
         
     - name: Test API
+      env:
+        PYTHONPATH: ${{ github.workspace }}
       run: pytest tests/
